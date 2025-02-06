@@ -1,6 +1,6 @@
-
-
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
 import '../Models/members.dart';
@@ -24,6 +24,7 @@ class _HomeScreenState extends State<HomeScreen> {
     Provider.of<AttendanceProvider>(context, listen: false).fetchData();
     print('object');
   }
+
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
@@ -62,7 +63,7 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           children: [
             ListTile(
-              title: const Text('Add Worker'),
+              title: const Text('Add Workers'),
               onTap: () {
                 _showAddWorkerForm(context);
               },
@@ -80,30 +81,66 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _showAddMemberForm(BuildContext context) {
+    final provider = AttendanceProvider();
     final nameController = TextEditingController();
     final idController = TextEditingController();
-    final roleController = TextEditingController();
-
+    final levelController = TextEditingController();
+    final doBController = TextEditingController();
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Add Member'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: nameController,
-              decoration: const InputDecoration(labelText: 'Name'),
-            ),
-            TextField(
-              controller: idController,
-              decoration: const InputDecoration(labelText: 'ID'),
-            ),
-            TextField(
-              controller: roleController,
-              decoration: const InputDecoration(labelText: 'Role'),
-            ),
-          ],
+        content: SizedBox(
+          width: 1000,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(
+                controller: nameController,
+                decoration: const InputDecoration(labelText: 'Name'),
+              ),
+              TextField(
+                controller: idController,
+                decoration: const InputDecoration(labelText: 'Department'),
+              ),
+              DropdownButtonFormField(
+                  hint: Text('Level'),
+                  value: provider.selectedLevel,
+                  items: [
+                    'Pre Degree',
+                    '100 Level',
+                    '200 Level',
+                    '300 Level',
+                    '400 Level',
+                    '500 Level',
+                    'Graduate',
+                  ]
+                      .map((level) =>
+                          DropdownMenuItem(value: level, child: Text(level)))
+                      .toList(),
+                  onChanged: (value) {
+                    if (value != null) {
+                      provider.setSelectLevel(value);
+                    }
+                  }),
+              DropdownButtonFormField(
+                  hint: Text('Gender'),
+                  value: provider.selectedGender,
+                  items: ['Male', 'female']
+                      .map((gender) =>
+                      DropdownMenuItem(value: gender, child: Text(gender)))
+                      .toList(),
+                  onChanged: (value) {
+                    if (value != null) {
+                      provider.setSelectedGender(value);
+                    }
+                  }),
+              TextField(
+                controller: doBController,
+                decoration: const InputDecoration(labelText: 'Date Of Birth'),
+              ),
+            ],
+          ),
         ),
         actions: [
           TextButton(
@@ -117,10 +154,11 @@ class _HomeScreenState extends State<HomeScreen> {
               final member = Members(
                 name: nameController.text,
                 id: idController.text,
-                role: roleController.text,
+                level: levelController.text,
+                gender: provider.selectedGender!,
               );
               Provider.of<AttendanceProvider>(context, listen: false)
-                  .addMembers(member);
+                  .addMember(member);
               Navigator.of(context).pop();
             },
             child: const Text('Add'),
@@ -131,14 +169,16 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _showAddWorkerForm(BuildContext context) {
+    String countryCode = '234';
     final nameController = TextEditingController();
-    final idController = TextEditingController();
-    final positionController = TextEditingController();
+    final dateOfBirthController = TextEditingController();
+    final addressController = TextEditingController();
     final schoolDepartmentController = TextEditingController();
-    final churchDepartmentController = TextEditingController();
+    final phoneNumberController = TextEditingController();
+    final schoolController = TextEditingController();
     final myFocusNode = FocusNode();
     final yFocusNode = FocusNode();
-    final FocusNodes = FocusNode();
+    final provider = AttendanceProvider();
 
     showDialog(
       context: context,
@@ -147,7 +187,6 @@ class _HomeScreenState extends State<HomeScreen> {
         content: SizedBox(
           width: 1000,
           child: Column(
-            mainAxisSize: MainAxisSize.max,
             children: [
               TextFormField(
                 focusNode: myFocusNode,
@@ -156,13 +195,90 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               TextFormField(
                 focusNode: yFocusNode,
-                controller: idController,
-                decoration: const InputDecoration(labelText: 'ID'),
+                controller: dateOfBirthController,
+                decoration: const InputDecoration(labelText: 'Date Of Birth'),
               ),
               TextFormField(
-
-                controller: positionController,
-                decoration: const InputDecoration(labelText: 'Department'),
+                keyboardType: TextInputType.number,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(11),
+                ],
+                controller: phoneNumberController,
+                decoration:  InputDecoration(
+                    labelText: 'Phone Number', prefixText: countryCode),
+              ),
+              TextFormField(
+                controller: schoolDepartmentController,
+                decoration:
+                    const InputDecoration(labelText: 'school Department'),
+              ),
+              DropdownButtonFormField(
+                  hint: Text('Church Department'),
+                  value: provider.selectedLevel,
+                  items: [
+                    'MINSTREL',
+                    'SOUND',
+                    'MEDIA',
+                    'LIGHT',
+                    'MAINTENANCE',
+                    'SANCTUARY',
+                    'HOSPITALITY',
+                    'COMMUNICATION',
+                    'PROTOCOL',
+                    'USHERING',
+                    'EVANGELISM',
+                    'WATCHMEN',
+                    'FOLLOW_UP',
+                    'FINANCE',
+                  ]
+                      .map(
+                        (churchDepartment) => DropdownMenuItem(
+                          value: '$churchDepartment DEPARTMENT',
+                          child: Text('$churchDepartment DEPARTMENT'),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (value) {
+                    if (value != null) {
+                      provider.setChurchDepartment(value);
+                    }
+                  }),
+              DropdownButtonFormField(
+                  hint: Text('Level'),
+                  value: provider.selectedLevel,
+                  items: [
+                    'Pre Degree',
+                    '100 Level',
+                    '200 Level',
+                    '300 Level',
+                    '400 Level',
+                    '500 Level',
+                    'Graduate',
+                  ]
+                      .map((level) =>
+                          DropdownMenuItem(value: level, child: Text(level)))
+                      .toList(),
+                  onChanged: (value) {
+                    if (value != null) {
+                      provider.setSelectLevel(value);
+                    }
+                  }),
+              DropdownButtonFormField(
+                  hint: Text('Gender'),
+                  value: provider.selectedGender,
+                  items: ['Male', 'female']
+                      .map((gender) =>
+                          DropdownMenuItem(value: gender, child: Text(gender)))
+                      .toList(),
+                  onChanged: (value) {
+                    if (value != null) {
+                      provider.setSelectedGender(value);
+                    }
+                  }),
+              TextFormField(
+                controller: addressController,
+                decoration: const InputDecoration(labelText: 'Address'),
               ),
             ],
           ),
@@ -179,9 +295,17 @@ class _HomeScreenState extends State<HomeScreen> {
               final worker = Worker(
                 name: nameController.text,
                 id: '',
-                department: positionController.text,
+                schoolDepartment: schoolController.text,
+                timestamp: Timestamp.now(),
+                phoneNumber:countryCode+phoneNumberController.text,
+                level: provider.selectedLevel!,
+                churchDepartment: provider.churchDepartment!,
+                gender: provider.selectedGender!,
+                address: addressController.text,
+                dateOfBirth: dateOfBirthController.text
               );
-              Provider.of<AttendanceProvider>(context, listen: false).addWorker(worker);
+              Provider.of<AttendanceProvider>(context, listen: false)
+                  .addWorker(context,worker,phoneNumberController.text);
               Navigator.of(context).pop();
             },
             child: const Text('Add'),
@@ -191,4 +315,3 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 }
-

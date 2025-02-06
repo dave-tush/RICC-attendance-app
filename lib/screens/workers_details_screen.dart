@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:first_project/Provider/attendance_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
@@ -5,22 +6,43 @@ import 'package:provider/provider.dart';
 import '../Models/workers.dart';
 
 class WorkerDetailsScreen extends StatelessWidget {
-  final Worker worker;
+  final String worker;
+  final String churchDepartment;
+  final String phoneNumber;
+  final String gender;
+  final String level;
+  final String schoolDepartment;
+  final bool isPresent;
+  final String id;
+  final Timestamp timeStamp;
+  final String documentId;
 
-  const WorkerDetailsScreen({super.key, required this.worker});
+  const WorkerDetailsScreen({
+    super.key,
+    required this.worker,
+    required this.churchDepartment,
+    required this.phoneNumber,
+    required this.schoolDepartment,
+    required this.level,
+    required this.gender,
+    required this.isPresent,
+    required this.id,
+    required this.timeStamp, required this.documentId,
+  });
 
   @override
   Widget build(BuildContext context) {
     final provider = Provider.of<AttendanceProvider>(context);
-    final index = provider.workers.indexOf(worker);
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(worker.name),
+        title: Text(worker),
         actions: [
-          IconButton(onPressed: (){
-            provider.deleteWorkers(worker);
-            Navigator.pop(context);
-          }, icon: Icon(Icons.delete))
+          IconButton(
+              onPressed: () {
+                _confirmDelete(context, provider, documentId,worker);
+              },
+              icon: Icon(Icons.delete))
         ],
       ),
       body: Padding(
@@ -29,37 +51,59 @@ class WorkerDetailsScreen extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              'Name: ${worker.name}',
+              'Name: $worker',
               style: const TextStyle(fontSize: 18),
             ),
             const SizedBox(height: 10),
             Text(
-              'ID: ${worker.id}',
+              'church Department: $churchDepartment',
               style: const TextStyle(fontSize: 18),
             ),
             const SizedBox(height: 10),
             Text(
-              'Position: ${worker.department}',
+              'level: $level',
               style: const TextStyle(fontSize: 18),
             ),
             const SizedBox(height: 10),
             Text(
-              'Present: ${worker.isPresent ? 'Yes' : 'No'}',
+              'gender: $gender',
               style: const TextStyle(fontSize: 18),
             ),
-            ElevatedButton(onPressed: (){
-              _showEditDialog(context, provider, worker, index);
-    }, child: Text("Edit"),)
+            const SizedBox(height: 10),
+            Text(
+              'school Department: $schoolDepartment',
+              style: const TextStyle(fontSize: 18),
+            ),
+            Text(
+              'time: $timeStamp',
+              style: const TextStyle(fontSize: 18),
+            ),
+            Text(
+              'id: $id',
+              style: const TextStyle(fontSize: 18),
+            ),
+            Text(
+              'Present: $isPresent',
+              style: const TextStyle(fontSize: 18),
+            ),
+            const SizedBox(height: 10),
+            ElevatedButton(
+              onPressed: () {
+                // _showEditDialog(context, provider, worker, index);
+              },
+              child: Text("Edit"),
+            )
           ],
         ),
       ),
     );
   }
-  void _showEditDialog(
-      BuildContext context, AttendanceProvider provider, Worker worker, int index) {
-    final nameController = TextEditingController(text: worker.name);
-    final positionController = TextEditingController(text: worker.department);
 
+  void _showEditDialog(BuildContext context, AttendanceProvider provider,
+      Worker worker, int index) {
+    final nameController = TextEditingController(text: worker.name);
+    final positionController =
+        TextEditingController(text: worker.schoolDepartment);
     showDialog(
       context: context,
       builder: (context) {
@@ -71,6 +115,26 @@ class WorkerDetailsScreen extends StatelessWidget {
               TextField(
                 controller: nameController,
                 decoration: const InputDecoration(labelText: 'Name'),
+              ),
+              TextField(
+                controller: positionController,
+                decoration: const InputDecoration(labelText: 'Position'),
+              ),
+              TextField(
+                controller: positionController,
+                decoration: const InputDecoration(labelText: 'Position'),
+              ),
+              TextField(
+                controller: positionController,
+                decoration: const InputDecoration(labelText: 'Position'),
+              ),
+              TextField(
+                controller: positionController,
+                decoration: const InputDecoration(labelText: 'Position'),
+              ),
+              TextField(
+                controller: positionController,
+                decoration: const InputDecoration(labelText: 'Position'),
               ),
               TextField(
                 controller: positionController,
@@ -88,8 +152,15 @@ class WorkerDetailsScreen extends StatelessWidget {
                 final updatedWorker = Worker(
                   name: nameController.text,
                   id: worker.id,
-                  department: positionController.text,
                   isPresent: worker.isPresent,
+                  timestamp: Timestamp.now(),
+                  phoneNumber: '1234',
+                  level: '',
+                  schoolDepartment: '',
+                  churchDepartment: '',
+                  gender: '',
+                  address: '',
+                  dateOfBirth: ''
                 );
                 provider.updateWorkers(index, updatedWorker);
                 Navigator.pop(context);
@@ -100,4 +171,37 @@ class WorkerDetailsScreen extends StatelessWidget {
         );
       },
     );
-}}
+  }
+  void _confirmDelete(BuildContext context, AttendanceProvider provider, String documentId, String name) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Confirm Deletion'),
+          content:  Text('Are you sure you want to delete $name?'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Close the dialog
+              },
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                await provider.deleteWorker(documentId);
+                Navigator.of(context).pop(); // Close the dialog
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Worker deleted successfully!')),
+                );
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              child: const Text('Delete'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+}

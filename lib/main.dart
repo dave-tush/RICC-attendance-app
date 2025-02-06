@@ -3,13 +3,12 @@ import 'package:first_project/firebase_options.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'Provider/attendance_provider.dart';
+import 'example.dart';
 import 'tabs/home_tabs.dart';
 
 void main() async{
   WidgetsFlutterBinding.ensureInitialized();
-  print('about to initialise firebase...');
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform,);
-  print("intialized");
   runApp(
     ChangeNotifierProvider(
       create: (context) => AttendanceProvider(),
