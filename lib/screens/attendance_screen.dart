@@ -2,37 +2,28 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-class AttendanceScreen extends StatefulWidget {
+import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+class AttendanceDetailsScreen extends StatelessWidget {
   final String date;
-  AttendanceScreen({required this.date});
+  const AttendanceDetailsScreen({super.key, required this.date});
 
-  @override
-  _AttendanceScreenState createState() => _AttendanceScreenState();
-}
-
-class _AttendanceScreenState extends State<AttendanceScreen> {
-  String _getDayOfTheWeek(String date){
-    try {
-      final parsedDate = DateTime.parse(date);
-      return DateFormat('dd-MMMM-yyyy').format(parsedDate);
-    } catch(e){
-      return '$e';
-    }
-  }
-  Future<List<Map<String, dynamic>>> fetchAttendance(String date) async {
+  Future<List<Map<String, dynamic>>> fetchWorkers(String date) async {
     try {
       final db = FirebaseFirestore.instance;
-      final attendanceCollection = db.collection('attendance').doc(date).collection('worker');
+      final workersCollection = db.collection('attendance').doc(date).collection('workers');
 
-      final querySnapshot = await attendanceCollection.get();
+      final querySnapshot = await workersCollection.get();
 
       if (querySnapshot.docs.isEmpty) {
-        print("No attendance records found for $date");
+        print("No workers present on $date");
+        return [];
       }
 
       return querySnapshot.docs.map((doc) => doc.data()).toList();
     } catch (e) {
-      print("Error fetching attendance: $e");
+      print("Error fetching workers: $e");
       return [];
     }
   }
@@ -40,16 +31,16 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Attendance on ${widget.date}')),
+      appBar: AppBar(title: Text('Attendance on $date')),
       body: FutureBuilder<List<Map<String, dynamic>>>(
-        future: fetchAttendance(widget.date),
+        future: fetchWorkers(date),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Center(child: CircularProgressIndicator());
           }
 
           if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return Center(child: Text('No attendance records found.'));
+            return Center(child: Text('No workers were present.'));
           }
 
           final workers = snapshot.data!;
@@ -58,12 +49,19 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
             itemCount: workers.length,
             itemBuilder: (context, index) {
               final worker = workers[index];
-              return ListTile(
-                title: Text(worker['name']),
-                subtitle: Text(worker['schoolDepartment']),
-                trailing: worker['isPresent'] == true
-                    ? Icon(Icons.check_circle, color: Colors.green)
-                    : Icon(Icons.cancel, color: Colors.red),
+              return Card(
+                margin: EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                child: ListTile(
+                  title: Text(worker['name'] ?? 'Unknown'),
+                  subtitle: Text(worker['schoolDepartment'] ?? 'No Department'),
+                  trailing: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text("Count: ${worker['attendanceCount'] ?? 0}"),
+                      Icon(Icons.check_circle, color: Colors.green),
+                    ],
+                  ),
+                ),
               );
             },
           );
@@ -72,3 +70,4 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
     );
   }
 }
+

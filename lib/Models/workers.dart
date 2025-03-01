@@ -10,6 +10,8 @@ class Worker {
   final String address;
   final String schoolDepartment;
   final String dateOfBirth;
+  final int attendanceCount;
+  final String email;
   bool isPresent;
   final Timestamp timestamp;
 
@@ -22,24 +24,28 @@ class Worker {
       required this.level,
       required this.schoolDepartment,
       required this.churchDepartment,
+        required this.email,
       required this.gender,
       required this.address,
         required this.dateOfBirth,
+        required this.attendanceCount
       });
 
   factory Worker.fromFirestore(Map<String, dynamic> data, String id) {
     return Worker(
-      name: data['name'],
-      id: id,
-      schoolDepartment: data['SchoolDepartment'],
+      name: data['name'] as String? ?? "unknown",
+      id: id ?? 'N/A',
+      schoolDepartment: data['SchoolDepartment'] ?? "N/A",
       isPresent: data['isPresent'] ?? false,
-      timestamp: data['timeStamp'],
-      churchDepartment: data['churchDepartment'],
-      phoneNumber: data['phoneNumber'],
-      level: data['level'],
-      gender: data['gender'],
-      address: data['address'],
-      dateOfBirth: data['dateOfBirth']
+      timestamp: data['timeStamp'] ?? "N/A",
+      churchDepartment: data['churchDepartment'] ?? "N/A",
+      phoneNumber: data['phoneNumber'] ?? "N/A",
+      level: data['level'] ?? "N/A",
+      gender: data['gender']?? "N/A",
+      address: data['address']?? "N/A",
+      dateOfBirth: data['dateOfBirth']?? "N/A",
+        attendanceCount: data['attendanceCount'] ?? 0,
+      email: data['email'] ?? "N/A",
     );
   }
 
@@ -55,6 +61,8 @@ class Worker {
       'isPresent': isPresent,
       'timeStamp': timestamp,
       'dateOfBirth': dateOfBirth,
+      'attendanceCount': attendanceCount,
+      'email': email
     };
   }
 }
