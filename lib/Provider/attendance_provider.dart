@@ -14,7 +14,8 @@ import 'package:http/http.dart' as http;
 import '../Models/workers.dart';
 
 class AttendanceProvider with ChangeNotifier {
-  final String whatsappToken = 'EAAYZBrPpPlsgBO9w3MG6XNfmm10ZBvEvkf2SxspWxRLYsxzCWdYCIHt2VAKWEybv7ukeVvvFraqvJSgivByJHiKwHIbVsLx2CXV70yp7dLV9C1VE5Y0FqEgkXGamfErINoKiOuM119dk8eZCAOjWz7LKzbEbIRbVf34YmbZAj1HawgmizwapZAufGuL1PgwoXOVLPOrB4NZCXcNYLGkhnuoxiZARNgZD';
+  final String whatsappToken =
+      'EAAYZBrPpPlsgBO9w3MG6XNfmm10ZBvEvkf2SxspWxRLYsxzCWdYCIHt2VAKWEybv7ukeVvvFraqvJSgivByJHiKwHIbVsLx2CXV70yp7dLV9C1VE5Y0FqEgkXGamfErINoKiOuM119dk8eZCAOjWz7LKzbEbIRbVf34YmbZAj1HawgmizwapZAufGuL1PgwoXOVLPOrB4NZCXcNYLGkhnuoxiZARNgZD';
   final String phoneNumberID = '570357182827926';
   final String apiUrl = 'https://graph.facebook.com/v21.0';
   final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -29,6 +30,7 @@ class AttendanceProvider with ChangeNotifier {
   String? _churchDepartment;
   Timer? _debounceTimer;
   String? profileImageUrl;
+  bool _isPresent = false;
 
   String? get selectedGender => _selectedGender;
 
@@ -37,6 +39,8 @@ class AttendanceProvider with ChangeNotifier {
   String? get churchDepartment => _churchDepartment;
 
   bool get isLoading => _isLoading;
+
+  bool get isPresent => _isPresent;
 
   void setSelectedGender(String gender) {
     _selectedGender = gender;
@@ -63,12 +67,14 @@ class AttendanceProvider with ChangeNotifier {
         return;
       }
       String uid = user.uid;
-      final workSnapshot = await _db.collection('users').doc(uid).collection('workers').get();
+      final workSnapshot =
+          await _db.collection('users').doc(uid).collection('workers').get();
       _worker = workSnapshot.docs
           .map((doc) => Worker.fromFirestore(doc.data(), doc.id))
           .toList();
       //fetch members
-      final memberSnapshot = await _db.collection('users').doc(uid).collection('members').get();
+      final memberSnapshot =
+          await _db.collection('users').doc(uid).collection('members').get();
       _members = memberSnapshot.docs
           .map(
             (doc) => Members.fromFirestore(doc.data(), doc.id),
@@ -76,7 +82,7 @@ class AttendanceProvider with ChangeNotifier {
           .toList();
       _sortWorkersAlphabetically();
       notifyListeners();
-    } catch (e,stacktrace) {
+    } catch (e, stacktrace) {
       print('Error fetching data: $e');
       print(stacktrace);
     } finally {
@@ -90,38 +96,42 @@ class AttendanceProvider with ChangeNotifier {
     if (user == null) return;
     String uid = user.uid;
     final date = DateTime.now().toIso8601String().split('T').first;
-    final attendanceCollection =
-        _db.collection('users').doc(uid).collection('attendance').doc(date).collection('workers');
-    await _db.collection('users').doc(uid).collection('attendance').doc(date).set({});
+    final attendanceCollection = _db
+        .collection('users')
+        .doc(uid)
+        .collection('attendance')
+        .doc(date)
+        .collection('workers');
     bool atLeastOneWorkerPresent = false;
     List<DocumentSnapshot> updatedWorker = [];
     for (final worker in _work) {
       final data = worker.data() as Map<String, dynamic>;
       if (data['isPresent'] == true) {
         atLeastOneWorkerPresent = true;
+        DocumentReference workerRef = attendanceCollection.doc(worker.id);
 
-        DocumentReference workerRef = _db.collection('users').doc(uid).collection('attendance').doc().collection('workers').doc(worker.id);
-
-        DocumentSnapshot workerDoc = await workerRef.get();
-
-        int attendanceCount =
-            workerDoc.exists && workerDoc['attendanceCount'] != null
-                ? workerDoc['attendanceCount'] as int
-                : 0;
-        await workerRef.set({
-          'attendanceCount': attendanceCount + 1,
-        }, SetOptions(merge: true));
-        await attendanceCollection.doc(worker.id).set({
-          'name': data['name'],
-          'schoolDepartment': data['schoolDepartment'],
-          'churchDepartment': data['churchDepartment'],
-          'level': data['level'],
-          'position': data['position'],
-          'phoneNumber': data['phoneNumber'],
-          'isPresent': data['isPresent'],
-          'attendanceCount': attendanceCount + 1,
+        await _db.runTransaction((transaction) async {
+          DocumentSnapshot workerDoc = await workerRef.get();
+          int attendanceCount =
+              workerDoc.exists && workerDoc['attendanceCount'] != null
+                  ? workerDoc['attendanceCount'] as int
+                  : 0;
+          await transaction.set(
+            workerRef,
+            {
+              'name': data['name'],
+              'schoolDepartment': data['schoolDepartment'],
+              'churchDepartment': data['churchDepartment'],
+              'level': data['level'],
+              'position': data['position'],
+              'phoneNumber': data['phoneNumber'],
+              'isPresent': data['isPresent'],
+              'attendanceCount': attendanceCount + 1,
+            },
+            SetOptions(merge: true),
+          );
+          print('saved worker: ${data['name']} on $date');
         });
-        print('saved worker: ${data['name']} on $date');
       }
       updatedWorker.add(worker);
     }
@@ -137,8 +147,12 @@ class AttendanceProvider with ChangeNotifier {
       User? user = FirebaseAuth.instance.currentUser;
       if (user == null) return [];
       String uid = user.uid;
-      final attendanceCollection =
-          _db.collection('users').doc(uid).collection('attendance').doc(date).collection('workers');
+      final attendanceCollection = _db
+          .collection('users')
+          .doc(uid)
+          .collection('attendance')
+          .doc(date)
+          .collection('workers');
 
       final querySnapshot = await attendanceCollection.get();
 
@@ -160,22 +174,37 @@ class AttendanceProvider with ChangeNotifier {
     if (user == null) return;
     String uid = user.uid;
     final date = DateTime.now().toString().split('T').first;
-    final attendanceCollection =
-        _db.collection('users').doc(uid).collection('attendance').doc(date).collection('members');
-    await _db.collection('users').doc(uid).collection('attendance').doc(date).set({});
+    final attendanceCollection = _db
+        .collection('users')
+        .doc(uid)
+        .collection('attendance')
+        .doc(date)
+        .collection('members');
+    await _db
+        .collection('users')
+        .doc(uid)
+        .collection('attendance')
+        .doc(date)
+        .set({});
     bool atLeastOneMemberPresent = false;
     List<DocumentSnapshot> updatedMember = [];
     for (final member in _member) {
       final data = member.data() as Map<String, dynamic>;
-      if(data['isPresent'] == true ){
+      if (data['isPresent'] == true) {
         atLeastOneMemberPresent = true;
-        DocumentReference memberRef = _db.collection('users').doc(uid).collection('attendance').doc().collection('members').doc(member.id);
+        DocumentReference memberRef = _db
+            .collection('users')
+            .doc(uid)
+            .collection('attendance')
+            .doc()
+            .collection('members')
+            .doc(member.id);
 
         DocumentSnapshot memberDoc = await memberRef.get();
         int attendanceCount =
-        memberDoc.exists && memberDoc['attendanceCount'] != null
-            ? memberDoc['attendanceCount'] as int
-            : 0;
+            memberDoc.exists && memberDoc['attendanceCount'] != null
+                ? memberDoc['attendanceCount'] as int
+                : 0;
         await memberRef.set({
           'attendanceCount': attendanceCount + 1,
         }, SetOptions(merge: true));
@@ -229,17 +258,30 @@ class AttendanceProvider with ChangeNotifier {
       User? user = FirebaseAuth.instance.currentUser;
       if (user == null) return;
       String uid = user.uid;
-      QuerySnapshot query = await _db.collection('users').doc(uid)
+      QuerySnapshot query = await _db
+          .collection('users')
+          .doc(uid)
           .collection('workers')
           .where('phoneNumber', isEqualTo: phoneNumber)
           .get();
       if (query.docs.isNotEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-            content: Text('Worker with phone $phoneNumber already exists!')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Worker with phone $phoneNumber already exists!'),
+          ),
+        );
         return;
       }
-      await _db.collection('users').doc(uid).collection('workers').add(worker.toFirestore());
-      await _db.collection('users').doc(uid).collection('all').add(worker.toFirestore());
+      await _db
+          .collection('users')
+          .doc(uid)
+          .collection('workers')
+          .add(worker.toFirestore());
+      await _db
+          .collection('users')
+          .doc(uid)
+          .collection('all')
+          .add(worker.toFirestore());
       fetchData();
       notifyListeners();
       ScaffoldMessenger.of(context)
@@ -258,19 +300,33 @@ class AttendanceProvider with ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> addMember(BuildContext context, Members member,String phoneNumber) async {
+  Future<void> addMember(
+      BuildContext context, Members member, String phoneNumber) async {
     try {
       User? user = FirebaseAuth.instance.currentUser;
       if (user == null) return;
       String uid = user.uid;
-      QuerySnapshot query = await _db.collection('users').doc(uid).collection('members').where('phoneNumber', isEqualTo: phoneNumber).get();
-      if (query.docs.isEmpty){
+      QuerySnapshot query = await _db
+          .collection('users')
+          .doc(uid)
+          .collection('members')
+          .where('phoneNumber', isEqualTo: phoneNumber)
+          .get();
+      if (query.docs.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
             content: Text('Worker with phone $phoneNumber already exists!')));
         return;
       }
-      await _db.collection('users').doc(uid).collection('members').add(member.toFirestore());
-      await _db.collection('users').doc(uid).collection('all').add(member.toFirestore());
+      await _db
+          .collection('users')
+          .doc(uid)
+          .collection('members')
+          .add(member.toFirestore());
+      await _db
+          .collection('users')
+          .doc(uid)
+          .collection('all')
+          .add(member.toFirestore());
       fetchData();
       notifyListeners();
     } catch (e) {
@@ -303,7 +359,11 @@ class AttendanceProvider with ChangeNotifier {
     User? user = FirebaseAuth.instance.currentUser;
     if (user == null) return null;
     String uid = user.uid;
-    return _db.collection('users').doc(uid).collection('attendance').snapshots();
+    return _db
+        .collection('users')
+        .doc(uid)
+        .collection('attendance')
+        .snapshots();
   }
 
   void setWorkers(List<DocumentSnapshot> worker) {
@@ -380,10 +440,14 @@ class AttendanceProvider with ChangeNotifier {
     if (user == null) return;
     String uid = user.uid;
     bool updateIsPresent = !isPresent;
-    _db.collection('users').doc(uid)
+    _db
+        .collection('users')
+        .doc(uid)
         .collection('workers')
         .doc(documentId)
         .update({'isPresent': updateIsPresent});
+    _isPresent = updateIsPresent;
+    print(updateIsPresent);
     notifyListeners();
   }
 
@@ -393,10 +457,13 @@ class AttendanceProvider with ChangeNotifier {
     if (user == null) return;
     String uid = user.uid;
     try {
-      final docRef = _db.collection('users').doc(uid).collection('all').doc(documentId);
+      final docRef =
+          _db.collection('users').doc(uid).collection('all').doc(documentId);
       final doc = await docRef.get();
       if (doc.exists) {
-        _db.collection('users').doc(uid)
+        _db
+            .collection('users')
+            .doc(uid)
             .collection('all')
             .doc(documentId)
             .update({'isPresent': updateIsPresent});
@@ -416,7 +483,9 @@ class AttendanceProvider with ChangeNotifier {
     User? user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
     String uid = user.uid;
-    _db.collection('users').doc(uid)
+    _db
+        .collection('users')
+        .doc(uid)
         .collection('members')
         .doc(documentId)
         .update({'isPresent': updateIsPresent});
@@ -427,7 +496,12 @@ class AttendanceProvider with ChangeNotifier {
     User? user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
     String uid = user.uid;
-    _db.collection('users').doc(uid).collection('workers').doc(documentId).delete();
+    _db
+        .collection('users')
+        .doc(uid)
+        .collection('workers')
+        .doc(documentId)
+        .delete();
     notifyListeners();
   }
 
@@ -496,56 +570,55 @@ class AttendanceProvider with ChangeNotifier {
   }
 
   Future<void> sendWhatsAppMessage(String name, String phoneNumber) async {
-    if (phoneNumber.isEmpty){
+    if (phoneNumber.isEmpty) {
       print('no phone number for $name skipping whatsapp message.');
       return;
     }
     final String url = '$apiUrl/$phoneNumberID/messages';
-      final Map<String, dynamic> body = {
-        'messaging_product': 'whatsapp',
-        "to": phoneNumber,
-        "type": "text",
-        "text": {
-          "body": "Hello $name, you were not in Church today  "
-        }
-      };
-      print(phoneNumber);
-      try {
-        final response = await http.post(Uri.parse(url),
-            headers: {
-              'Authorization': 'Bearer $whatsappToken',
-              'Content-Type': 'application/json'
-            },
-            body: jsonEncode(body));
-        if (response.statusCode == 200) {
-          print('message successfully sent to:');
-        } else {
-          print('Failed to send message: ${response.body}');
-        }
-      } catch (e) {
-        print('Error sending whatsapp message: $e');
+    final Map<String, dynamic> body = {
+      'messaging_product': 'whatsapp',
+      "to": phoneNumber,
+      "type": "text",
+      "text": {"body": "Hello $name, you were not in Church today  "}
+    };
+    print(phoneNumber);
+    try {
+      final response = await http.post(Uri.parse(url),
+          headers: {
+            'Authorization': 'Bearer $whatsappToken',
+            'Content-Type': 'application/json'
+          },
+          body: jsonEncode(body));
+      if (response.statusCode == 200) {
+        print('message successfully sent to:');
+      } else {
+        print('Failed to send message: ${response.body}');
       }
-      notifyListeners();
-
+    } catch (e) {
+      print('Error sending whatsapp message: $e');
+    }
+    notifyListeners();
   }
 
   Future<void> notifyAbsentMembers() async {
     try {
-      final absentWorker = _work.where((worker){
+      final absentWorker = _work.where((worker) {
         final data = worker.data() as Map<String, dynamic>?;
-        return data != null && data.containsKey('isPresent') &&  data['isPresent'] == false;
+        return data != null &&
+            data.containsKey('isPresent') &&
+            data['isPresent'] == false;
       }).toList();
 
-      if(absentWorker.isEmpty){
+      if (absentWorker.isEmpty) {
         print('no absent workers to notify');
         return;
       }
-      await Future.wait(absentWorker.map((worker)async {
+      await Future.wait(absentWorker.map((worker) async {
         final data = worker.data() as Map<String, dynamic>;
         final String name = data['name'] ?? 'user';
         final String phoneNumber = data['phoneNumber'] ?? '';
-        if (phoneNumber.isNotEmpty){
-          await sendWhatsAppMessage(name,phoneNumber);
+        if (phoneNumber.isNotEmpty) {
+          await sendWhatsAppMessage(name, phoneNumber);
         }
       }));
       print('${absentWorker.length} absent workers notified.');
@@ -555,6 +628,7 @@ class AttendanceProvider with ChangeNotifier {
     }
     notifyListeners();
   }
+
   Future<void> rectifyAbsentMembers() async {
     for (var workers in _work) {
       Map<String, dynamic>? data = workers.data() as Map<String, dynamic>;
@@ -563,7 +637,7 @@ class AttendanceProvider with ChangeNotifier {
         final String name = data['name'] ?? 'user';
         final String phoneNumber = data['phoneNumber'] ?? '';
         if (isPresent == false) {
-          await sendWhatsAppMessage(name,phoneNumber);
+          await sendWhatsAppMessage(name, phoneNumber);
         }
       } else {
         print('error');

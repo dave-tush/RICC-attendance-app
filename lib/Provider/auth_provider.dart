@@ -65,4 +65,8 @@ class AuthsProvider with ChangeNotifier {
     _user = null;
     notifyListeners();
   }
+  Future<void> checkAuthentication () async {
+    _user = _auth.currentUser;
+    notifyListeners();
+  }
 }

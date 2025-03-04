@@ -7,6 +7,7 @@ import '../Models/members.dart';
 import '../Provider/attendance_provider.dart';
 
 void showAddMemberForm(BuildContext context) {
+  String countryCode = '234';
   final provider = AttendanceProvider();
   final nameController = TextEditingController();
   final phoneNumberController = TextEditingController();
@@ -42,6 +43,7 @@ void showAddMemberForm(BuildContext context) {
               controller: phoneNumberController,
               decoration: InputDecoration(
                   labelText: 'Phone Number',
+                  prefixText: countryCode,
                   labelStyle: TextStyle(
                     color: colors.primaryColor,
                     fontSize: 16,
@@ -119,7 +121,7 @@ void showAddMemberForm(BuildContext context) {
             name: nameController.text,
             level: levelController.text,
             gender: provider.selectedGender!,
-            phoneNumber: phoneNumberController.text,
+            phoneNumber: countryCode + phoneNumberController.text,
             dateOfBirth: doBController.text,
           );
           Provider.of<AttendanceProvider>(context, listen: false)

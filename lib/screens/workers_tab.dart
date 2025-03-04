@@ -152,9 +152,11 @@ class AttendanceList extends StatelessWidget {
           return ListTile(
             leading: Checkbox(
                 activeColor: color.primaryColor,
-                value: isPresent,
-                onChanged: (value) {
-                  provider.toggleWorkersAttendance(documentId, isPresent);
+                value: provider.isPresent,
+                onChanged: (bool? value) {
+                  if (value != null){
+                    provider.toggleWorkersAttendance(documentId, value);
+                  }
                 }),
             title: RichText(
               text: highlightText(

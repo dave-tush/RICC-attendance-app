@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -11,8 +12,14 @@ class AttendanceDetailsScreen extends StatelessWidget {
 
   Future<List<Map<String, dynamic>>> fetchWorkers(String date) async {
     try {
+      User? user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        print('User not logged in');
+        return [];
+      }
+      String uid = user.uid;
       final db = FirebaseFirestore.instance;
-      final workersCollection = db.collection('attendance').doc(date).collection('workers');
+      final workersCollection = db.collection('users').doc(uid).collection('attendance').doc(date).collection('workers');
 
       final querySnapshot = await workersCollection.get();
 

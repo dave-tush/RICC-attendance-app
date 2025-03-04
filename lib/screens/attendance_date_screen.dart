@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:first_project/screens/members_attendance_details_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -27,7 +28,13 @@ class _AttendanceDatesScreenState extends State<AttendanceDatesScreen> {
   Future<List<String>> fetchAttendanceDates() async {
     try {
       final db = FirebaseFirestore.instance;
-      final querySnapshot = await db.collection('attendance').get();
+      User? user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        print('User not logged in');
+        return [];
+      }
+      String uid = user.uid;
+      final querySnapshot = await db.collection('users').doc(uid).collection('attendance').get();
 
       if (querySnapshot.docs.isEmpty) {
         print("No attendance records found");
