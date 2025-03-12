@@ -13,13 +13,10 @@ void showAddWorkerForm(BuildContext context) {
   final nameController = TextEditingController();
   final dateOfBirthController = TextEditingController();
   final addressController = TextEditingController();
-  final schoolDepartmentController = TextEditingController();
   final phoneNumberController = TextEditingController();
-  final schoolController = TextEditingController();
   final myFocusNode = FocusNode();
   final yFocusNode = FocusNode();
   final provider = AttendanceProvider();
-  final emailController = TextEditingController();
   showDialog(
       context: context,
       builder: (context) {
@@ -68,24 +65,6 @@ void showAddWorkerForm(BuildContext context) {
                   decoration: InputDecoration(
                       labelText: 'Phone Number',
                       prefixText: countryCode,
-                      labelStyle: TextStyle(
-                        color: colors.primaryColor,
-                        fontSize: 16,
-                      )),
-                ),
-                TextFormField(
-                  controller: schoolDepartmentController,
-                  decoration: InputDecoration(
-                      labelText: 'school Department',
-                      labelStyle: TextStyle(
-                        color: colors.primaryColor,
-                        fontSize: 16,
-                      )),
-                ),
-                TextFormField(
-                  controller: emailController,
-                  decoration: InputDecoration(
-                      labelText: 'Email',
                       labelStyle: TextStyle(
                         color: colors.primaryColor,
                         fontSize: 16,
@@ -205,15 +184,16 @@ void showAddWorkerForm(BuildContext context) {
               final worker = Worker(
                   name: nameController.text,
                   id: '',
-                  schoolDepartment: schoolController.text,
                   timestamp: Timestamp.now(),
                   phoneNumber: countryCode + phoneNumberController.text,
                   level: provider.selectedLevel!,
-                  churchDepartment: provider.churchDepartment!,
+                  churchDepartment: provider.department!,
                   gender: provider.selectedGender!,
                   address: addressController.text,
                   dateOfBirth: dateOfBirthController.text,
-                  attendanceCount: 0, email: '');
+                  attendanceCount: 0, email: '',
+                  type: 'workers'
+              );
               Provider.of<AttendanceProvider>(context, listen: false)
                   .addWorker(context, worker, phoneNumberController.text);
               Navigator.of(context).pop();

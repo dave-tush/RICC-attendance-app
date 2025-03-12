@@ -8,10 +8,10 @@ class Worker {
   final String gender;
   final String churchDepartment;
   final String address;
-  final String schoolDepartment;
   final String dateOfBirth;
   final int attendanceCount;
   final String email;
+  final String type;
   bool isPresent;
   final Timestamp timestamp;
 
@@ -22,20 +22,19 @@ class Worker {
       required this.timestamp,
       required this.phoneNumber,
       required this.level,
-      required this.schoolDepartment,
       required this.churchDepartment,
         required this.email,
       required this.gender,
       required this.address,
         required this.dateOfBirth,
-        required this.attendanceCount
+        required this.attendanceCount,
+        required this.type
       });
 
   factory Worker.fromFirestore(Map<String, dynamic> data, String id) {
     return Worker(
       name: data['name'] as String? ?? "unknown",
       id: id ?? 'N/A',
-      schoolDepartment: data['SchoolDepartment'] ?? "N/A",
       isPresent: data['isPresent'] ?? false,
       timestamp: data['timeStamp'] ?? "N/A",
       churchDepartment: data['churchDepartment'] ?? "N/A",
@@ -46,13 +45,13 @@ class Worker {
       dateOfBirth: data['dateOfBirth']?? "N/A",
         attendanceCount: data['attendanceCount'] ?? 0,
       email: data['email'] ?? "N/A",
+      type: data['type']
     );
   }
 
   Map<String, dynamic> toFirestore() {
     return {
       'name': name,
-      'schoolDepartment': schoolDepartment,
       'churchDepartment': churchDepartment,
       'phoneNumber': phoneNumber,
       'level': level,
@@ -62,7 +61,8 @@ class Worker {
       'timeStamp': timestamp,
       'dateOfBirth': dateOfBirth,
       'attendanceCount': attendanceCount,
-      'email': email
+      'email': email,
+      'type': type
     };
   }
 }

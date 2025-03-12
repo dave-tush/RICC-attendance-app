@@ -38,12 +38,39 @@ class MembersTab extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             button(context, "Save members Attendance", () async {
-              await provider.saveMembers();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Attendance saved for today!'),
-                ),
+              final textDateController = TextEditingController();
+              String? additionalText = await showDialog<String>(context: context, builder:
+                  (BuildContext context) {
+                return AlertDialog(title: Text("today's service topic"),
+                  content: TextField(
+                    controller: textDateController,
+                    decoration: InputDecoration(hintText: "Enter topic"),
+                  ),
+                  actions: [
+                    TextButton(
+                      child: Text('Cancel'),
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                      },
+                    ),
+                    TextButton(
+                      child: Text('Save'),
+                      onPressed: () {
+                        Navigator.of(context).pop(textDateController.text);
+                      },
+                    ),
+                  ],
+                );
+              }
               );
+              if (additionalText != null && additionalText.isNotEmpty){
+                await provider.saveMember(additionalText);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Attendance saved for today!'),
+                  ),
+                );
+              }
             }),
             SizedBox(
               width: 40,
@@ -80,55 +107,76 @@ class MembersTab extends StatelessWidget {
                 provider.setMembers(snapShot.data!.docs);
                 final filteredMembers = provider.filteredMembers;
                 final color = MyColor();
-                return Expanded(
-                  child: ListView.builder(
-                    itemCount: filteredMembers.length,
-                    itemBuilder: (context, index) {
-                      final query = provider.searchQuery;
-                      DocumentSnapshot document = filteredMembers[index];
-                      String documentId = document.id;
-                      Map<String, dynamic> data =
-                          document.data() as Map<String, dynamic>;
-                      String noteText = data['name'];
-                      bool isPresent = data['isPresent'] ?? false;
-                      String department = data ['department'] ?? "null";
-                      return ListTile(
-                        leading: Checkbox(
-                            activeColor: color.primaryColor,
-                            value: isPresent,
-                            onChanged: (value) {
-                              provider.toggleMembersAttendance(
-                                  documentId, isPresent);
-                            }),
-                        title: RichText(
-                          text: highlightText(
-                            noteText,
-                            query,
-                            TextStyle(
-                                color: color.primaryColor,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 18),
-                            TextStyle(
-                              color: color.mainColor,
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
-                        subtitle: Text(department,style: TextStyle(
-                          fontWeight: FontWeight.w500,
-                          color: color.primaryColor,
-                          fontSize: 12,
-                        ),),
-                        onTap: () {
-                        },
-                      );
-                    },
-                  ),
-                );
+                return MembersAttendance(
+                    filteredMembers: filteredMembers,
+                    provider: provider,
+                    color: color);
               }
             })
       ],
+    );
+  }
+}
+
+class MembersAttendance extends StatelessWidget {
+  const MembersAttendance({
+    super.key,
+    required this.filteredMembers,
+    required this.provider,
+    required this.color,
+  });
+
+  final List<DocumentSnapshot<Object?>> filteredMembers;
+  final AttendanceProvider provider;
+  final MyColor color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: ListView.builder(
+        itemCount: filteredMembers.length,
+        itemBuilder: (context, index) {
+          final query = provider.searchQuery;
+          DocumentSnapshot document = filteredMembers[index];
+          String documentId = document.id;
+          Map<String, dynamic> data = document.data() as Map<String, dynamic>;
+          String noteText = data['name'];
+          bool isPresent = data['isPresent'] ?? false;
+          String department = data['department'] ?? "null";
+          return ListTile(
+            leading: Checkbox(
+                activeColor: color.primaryColor,
+                value: isPresent,
+                onChanged: (value) {
+                  provider.toggleMembersAttendance(documentId, isPresent);
+                }),
+            title: RichText(
+              text: highlightText(
+                noteText,
+                query,
+                TextStyle(
+                    color: color.primaryColor,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18),
+                TextStyle(
+                  color: color.mainColor,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+            subtitle: Text(
+              department,
+              style: TextStyle(
+                fontWeight: FontWeight.w500,
+                color: color.primaryColor,
+                fontSize: 12,
+              ),
+            ),
+            onTap: () {},
+          );
+        },
+      ),
     );
   }
 }

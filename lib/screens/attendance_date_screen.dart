@@ -15,46 +15,54 @@ class AttendanceDatesScreen extends StatefulWidget {
 }
 
 class _AttendanceDatesScreenState extends State<AttendanceDatesScreen> {
-
-
-  String _getFormattedDate(String date){
+  String _getFormattedDate(String date) {
     try {
       final parsedDate = DateTime.parse(date);
       return DateFormat('MMMM d, y').format(parsedDate);
-    } catch(e){
+    } catch (e) {
       return date;
     }
   }
-  Future<List<String>> fetchAttendanceDates() async {
+
+  Future<Map<String, dynamic>> fetchAttendanceDates() async {
     try {
       final db = FirebaseFirestore.instance;
       User? user = FirebaseAuth.instance.currentUser;
       if (user == null) {
         print('User not logged in');
-        return [];
+        return {};
       }
       String uid = user.uid;
       final querySnapshot = await db.collection('users').doc(uid).collection('attendance').get();
 
       if (querySnapshot.docs.isEmpty) {
         print("No attendance records found");
-        return [];
+        return {};
       }
 
-      final dates = querySnapshot.docs.map((doc) => doc.id.split('T').first).toList();
-      dates.sort((a, b) => b.compareTo(a)); // Sort dates in descending order
-      return dates;
+      final Map<String, dynamic> attendanceData = {};
+      for (final doc in querySnapshot.docs) {
+        final date = doc.id.split('T').first;
+        final additionalText = doc['additionalText'] as String?; // Fetch additional text
+        attendanceData[date] = {
+          'formattedDate': _getFormattedDate(date),
+          'additionalText': additionalText,
+        };
+      }
+
+      return attendanceData;
     } catch (e) {
       print("Error fetching attendance dates: $e");
-      return [];
+      return {};
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final provider = Provider.of<AttendanceProvider>(context);
     return Scaffold(
       appBar: AppBar(title: Text('Attendance Dates')),
-      body: FutureBuilder<List<String>>(
+      body: FutureBuilder<Map<String, dynamic>>(
         future: fetchAttendanceDates(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -70,16 +78,19 @@ class _AttendanceDatesScreenState extends State<AttendanceDatesScreen> {
           return ListView.builder(
             itemCount: dates.length,
             itemBuilder: (context, index) {
-              final date = dates[index];
-              final formattedDate = _getFormattedDate(dates[index]);
+              final dateKey = dates.keys.elementAt(index); // Get the date key
+              final dateData = dates[dateKey]; // Get the data for this date
+              final formattedDate = dateData['formattedDate']; // Get formatted date
+              final additionalText = dateData['additionalText']; // Get additional text
+
               return ListTile(
-                title: Text(formattedDate),
+                title: Text("${additionalText ?? 'No additional text'} ($formattedDate)"),
                 trailing: Icon(Icons.arrow_forward),
                 onTap: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => AttendanceDetailsScreen(date: date),
+                      builder: (context) => AttendanceDetailsScreen(date: dateKey),
                     ),
                   );
                 },

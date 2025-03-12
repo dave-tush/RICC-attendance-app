@@ -4,6 +4,7 @@ import 'package:first_project/screens/workers_details_screen.dart';
 import 'package:first_project/widgets/high_light_text.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../Models/workers.dart';
 import '../Provider/attendance_provider.dart';
 
 import '../foundation/color.dart';
@@ -51,18 +52,45 @@ class _WorkersTabState extends State<WorkersTab> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             button(context, "Save workers Attendance", () async {
-              await provider.saveWorker();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Attendance saved for today!'),
+              final textDateController = TextEditingController();
+              String? additionalText = await showDialog<String>(context: context, builder:
+              (BuildContext context) {
+                return AlertDialog(title: Text("today's service topic"),
+                content: TextField(
+                  controller: textDateController,
+                  decoration: InputDecoration(hintText: "Enter topic"),
                 ),
+                  actions: [
+                    TextButton(
+                      child: Text('Cancel'),
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                      },
+                    ),
+                    TextButton(
+                      child: Text('Save'),
+                      onPressed: () {
+                        Navigator.of(context).pop(textDateController.text);
+                      },
+                    ),
+                  ],
+                );
+              }
               );
-              await provider.notifyAbsentMembers();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('WhatsApp notifications sent!'),
-                ),
-              );
+              if (additionalText != null && additionalText.isNotEmpty){
+                await provider.saveWorker(additionalText);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Attendance saved for today!'),
+                  ),
+                );
+                await provider.notifyAbsentMembers();
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('WhatsApp notifications sent!'),
+                  ),
+                );
+              }
             }),
             SizedBox(
               width: 40,
@@ -78,12 +106,14 @@ class _WorkersTabState extends State<WorkersTab> {
             SizedBox(
               width: 40,
             ),
-            ElevatedButton(
-              onPressed: () {
-                provider.pickExcelFile();
-              },
-              child: Text("Import Excel"),
-            ),
+            button(context, "Department", () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => AttendanceDatesScreen(),
+                ),
+              );
+            }),
           ],
         ),
         SizedBox(
@@ -140,7 +170,6 @@ class AttendanceList extends StatelessWidget {
           String documentId = document.id;
           Map<String, dynamic> data = document.data() as Map<String, dynamic>;
           String noteText = data['name'];
-          String schoolDepartment = data['schoolDepartment'];
           bool isPresent = data['isPresent'] ?? false;
           String churchDepartment = data['churchDepartment'];
           String level = data['level'];
@@ -148,62 +177,73 @@ class AttendanceList extends StatelessWidget {
           String birthDate = data['dateOfBirth'];
           Timestamp timeStamp = data['timeStamp'];
           int attendanceCount = data['attendanceCount'] ?? 0;
-        String email = data['email'] ?? "N/A";
-          return ListTile(
-            leading: Checkbox(
-                activeColor: color.primaryColor,
-                value: provider.isPresent,
-                onChanged: (bool? value) {
-                  if (value != null){
-                    provider.toggleWorkersAttendance(documentId, value);
-                  }
-                }),
-            title: RichText(
-              text: highlightText(
-                noteText,
-                query,
-                TextStyle(
-                  color: color.primaryColor,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
-                ),
-                TextStyle(
-                  color: color.mainColor,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
-                ),
-              ),
-            ),
-            subtitle: Text(
-              churchDepartment,
-              style: TextStyle(
-                fontWeight: FontWeight.w500,
-                color: color.primaryColor,
-                fontSize: 12,
-              ),
-            ),
-            onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => WorkerDetailsScreen(
-                    worker: noteText,
-                    schoolDepartment: schoolDepartment,
-                    phoneNumber: '1234',
-                    churchDepartment: churchDepartment,
-                    level: level,
-                    gender: gender,
-                    isPresent: isPresent,
-                    timeStamp: timeStamp,
-                    id: '',
-                    documentId: documentId,
-                    attendanceCount: attendanceCount,
-                    birthDate: birthDate, email: email,
+          String email = data['email'] ?? "N/A";
+          return StreamBuilder<DocumentSnapshot>(stream: provider.getWorkerStream(documentId), builder: (context,snapShot){
+            if (snapShot.connectionState == ConnectionState.waiting){
+              return ListTile(leading: CircularProgressIndicator(), title: Text('Loading...'),);
+            } else if (snapShot.hasError){
+              return ListTile(title: Text('Error ${snapShot.hasError}'),);
+            } else if (!snapShot.hasData || !snapShot.data!.exists){
+              return ListTile(title: Text('No data found'),);
+            } else {
+              return ListTile(
+                leading: Checkbox(
+                    activeColor: color.primaryColor,
+                    value: isPresent,
+                    onChanged: (bool? value) {
+                      if (value != null) {
+                        provider.toggleWorkersAttendance(documentId, value);
+                      }
+                      print(isPresent);
+                    }),
+                title: RichText(
+                  text: highlightText(
+                    noteText,
+                    query,
+                    TextStyle(
+                      color: color.primaryColor,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                    ),
+                    TextStyle(
+                      color: color.mainColor,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                    ),
                   ),
                 ),
+                subtitle: Text(
+                  churchDepartment,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w500,
+                    color: color.primaryColor,
+                    fontSize: 12,
+                  ),
+                ),
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (context) => WorkerDetailsScreen(
+                        worker: noteText,
+                        phoneNumber: '1234',
+                        churchDepartment: churchDepartment,
+                        level: level,
+                        gender: gender,
+                        isPresent: isPresent,
+                        timeStamp: timeStamp,
+                        id: '',
+                        documentId: documentId,
+                        attendanceCount: attendanceCount,
+                        birthDate: birthDate,
+                        email: email,
+                      ),
+                    ),
+                  );
+                },
+                trailing: Icon(Icons.edit),
               );
-            },
-            trailing: Icon(Icons.edit),
-          );
+            }
+          });
         },
       ),
     );

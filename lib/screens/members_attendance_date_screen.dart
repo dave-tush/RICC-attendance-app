@@ -1,10 +1,13 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import 'members_attendance_details_screen.dart';
 
 class MembersAttendanceDateScreen extends StatefulWidget {
+  const MembersAttendanceDateScreen({super.key});
+
   @override
   _MembersAttendanceDatesScreenState createState() => _MembersAttendanceDatesScreenState();
 }
@@ -20,22 +23,33 @@ class _MembersAttendanceDatesScreenState extends State<MembersAttendanceDateScre
       return date;
     }
   }
-  Future<List<String>> fetchAttendanceDates() async {
+  Future<Map<String, dynamic>> fetchAttendanceDates() async {
     try {
       final db = FirebaseFirestore.instance;
-      final querySnapshot = await db.collection('attendance').get();
+      User? user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        return {};
+      }
+      String uid = user.uid;
+      final querySnapshot = await db.collection('users').doc(uid).collection('attendance').get();
 
       if (querySnapshot.docs.isEmpty) {
         print("No attendance records found");
-        return [];
+        return {};
       }
-
-      final dates = querySnapshot.docs.map((doc) => doc.id.split('T').first).toList();
-      dates.sort((a, b) => b.compareTo(a)); // Sort dates in descending order
-      return dates;
+      final Map<String, dynamic> attendanceDate = {};
+      for (final doc in querySnapshot.docs) {
+        final date = doc.id.split('T').first;
+        final additionalText = doc ['additionalText'] as String?;
+        attendanceDate[date] = {
+          'formattedDate': _getFormattedDate(date),
+          'additionalText' : additionalText,
+        };
+      }
+      return attendanceDate;
     } catch (e) {
       print("Error fetching attendance dates: $e");
-      return [];
+      return {};
     }
   }
 
@@ -43,7 +57,7 @@ class _MembersAttendanceDatesScreenState extends State<MembersAttendanceDateScre
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text('Attendance Dates')),
-      body: FutureBuilder<List<String>>(
+      body: FutureBuilder<Map<String, dynamic>>(
         future: fetchAttendanceDates(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -59,16 +73,21 @@ class _MembersAttendanceDatesScreenState extends State<MembersAttendanceDateScre
           return ListView.builder(
             itemCount: dates.length,
             itemBuilder: (context, index) {
+              final dateKey = dates.keys.elementAt(index);
+              final dateData = dates[dateKey];
+
               final date = dates[index];
-              final formattedDate = _getFormattedDate(dates[index]);
+              final formattedDate = dateData['formattedDate'];
+              final additionalText = dateData['additionalText'];
+
               return ListTile(
-                title: Text(formattedDate),
+                title: Text("${additionalText ?? 'No additional text'} ($formattedDate)"),
                 trailing: Icon(Icons.arrow_forward),
                 onTap: () {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder: (context) => MembersAttendanceDetailsScreen(date: date),
+                      builder: (context) => MembersAttendanceDetailsScreen(date: dateKey),
                     ),
                   );
                 },

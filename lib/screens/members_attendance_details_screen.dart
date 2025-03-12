@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 class MembersAttendanceDetailsScreen extends StatelessWidget {
@@ -8,12 +9,17 @@ class MembersAttendanceDetailsScreen extends StatelessWidget {
   Future<List<Map<String, dynamic>>> fetchMembers(String date) async {
     try {
       final db = FirebaseFirestore.instance;
-      final membersCollection = db.collection('attendance').doc(date).collection('members');
+      User? user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        return [];
+      }
+      String uid = user.uid;
+      final membersCollection = db.collection('users').doc(uid).collection('attendance').doc(date).collection('members');
 
       final querySnapshot = await membersCollection.get();
 
       if (querySnapshot.docs.isEmpty) {
-        print("No workers present on $date");
+        print("No members present on $date");
         return [];
       }
 

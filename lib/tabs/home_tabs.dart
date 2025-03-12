@@ -114,6 +114,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
               onTap: () {
                 showAddMemberForm(context);
+
               },
             ),
           ],

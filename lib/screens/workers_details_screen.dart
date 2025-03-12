@@ -13,7 +13,6 @@ class WorkerDetailsScreen extends StatelessWidget {
   final String phoneNumber;
   final String gender;
   final String level;
-  final String schoolDepartment;
   final bool isPresent;
   final String id;
   final Timestamp timeStamp;
@@ -27,7 +26,6 @@ class WorkerDetailsScreen extends StatelessWidget {
     required this.worker,
     required this.churchDepartment,
     required this.phoneNumber,
-    required this.schoolDepartment,
     required this.level,
     required this.gender,
     required this.isPresent,
@@ -161,7 +159,7 @@ class WorkerDetailsScreen extends StatelessWidget {
                             width: 48,
                           ),
                           _buildInfoColumn(
-                              "School Department", schoolDepartment),
+                              "School Department", churchDepartment),
                         ],
                       ),
                       const SizedBox(height: 10),
@@ -219,7 +217,7 @@ class WorkerDetailsScreen extends StatelessWidget {
       Worker worker, int index) {
     final nameController = TextEditingController(text: worker.name);
     final positionController =
-        TextEditingController(text: worker.schoolDepartment);
+        TextEditingController(text: worker.name);
     showDialog(
       context: context,
       builder: (context) {
@@ -272,12 +270,12 @@ class WorkerDetailsScreen extends StatelessWidget {
                   timestamp: Timestamp.now(),
                   phoneNumber: '1234',
                   level: '',
-                  schoolDepartment: '',
                   churchDepartment: '',
                   gender: '',
                   address: '',
                   dateOfBirth: '',
                   attendanceCount: 0, email: '',
+                  type: 'workers'
                 );
                 provider.updateWorkers(index, updatedWorker);
                 Navigator.pop(context);

@@ -11,8 +11,11 @@ void showAddMemberForm(BuildContext context) {
   final provider = AttendanceProvider();
   final nameController = TextEditingController();
   final phoneNumberController = TextEditingController();
+  final whatsAppPhoneNumberController = TextEditingController();
+  final addressController = TextEditingController();
   final levelController = TextEditingController();
   final doBController = TextEditingController();
+  final firstTimerController = TextEditingController();
 
   final colors = MyColor();
   showDialog(
@@ -44,6 +47,34 @@ void showAddMemberForm(BuildContext context) {
               decoration: InputDecoration(
                   labelText: 'Phone Number',
                   prefixText: countryCode,
+                  labelStyle: TextStyle(
+                    color: colors.primaryColor,
+                    fontSize: 16,
+                  )),
+            ),
+            TextField(
+              controller: whatsAppPhoneNumberController,
+              decoration: InputDecoration(
+                  labelText: 'WhatsApp Phone Number',
+                  prefixText: countryCode,
+                  labelStyle: TextStyle(
+                    color: colors.primaryColor,
+                    fontSize: 16,
+                  )),
+            ),
+            TextField(
+              controller: addressController,
+              decoration: InputDecoration(
+                  labelText: 'Address',
+                  labelStyle: TextStyle(
+                    color: colors.primaryColor,
+                    fontSize: 16,
+                  )),
+            ),
+            TextField(
+              controller: doBController,
+              decoration: InputDecoration(
+                  labelText: 'Date Of Birth',
                   labelStyle: TextStyle(
                     color: colors.primaryColor,
                     fontSize: 16,
@@ -103,26 +134,44 @@ void showAddMemberForm(BuildContext context) {
                     provider.setSelectedGender(value);
                   }
                 }),
-            TextField(
-              controller: doBController,
-              decoration: InputDecoration(
-                  labelText: 'Date Of Birth',
-                  labelStyle: TextStyle(
-                    color: colors.primaryColor,
-                    fontSize: 16,
-                  )),
-            ),
+            DropdownButtonFormField(
+                hint: Text(
+                  'First Timer',
+                  style: TextStyle(color: colors.primaryColor),
+                ),
+                value: provider.selectedGender,
+                items: ['Yes', 'No']
+                    .map(
+                      (firstTimer) => DropdownMenuItem(
+                        value: firstTimer,
+                        child: Text(
+                          firstTimer,
+                          style: TextStyle(
+                            color: colors.primaryColor,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                    )
+                    .toList(),
+                onChanged: (value) {
+                  if (value != null) {
+                    provider.setFirstTimer(value);
+                  }
+                }),
           ],
         ),
       ),
       actions: [
         button(context, 'ADD', () {
           final member = Members(
-            name: nameController.text,
-            level: levelController.text,
-            gender: provider.selectedGender!,
-            phoneNumber: countryCode + phoneNumberController.text,
-            dateOfBirth: doBController.text,
+              name: nameController.text,
+              level: levelController.text,
+              gender: provider.selectedGender!,
+              phoneNumber: countryCode + phoneNumberController.text,
+              dateOfBirth: doBController.text,
+              firstTimer: firstTimerController.text,
+              type: 'members', address: '', whatsAppPhoneNumber: ''
           );
           Provider.of<AttendanceProvider>(context, listen: false)
               .addMember(context, member, phoneNumberController.text);
