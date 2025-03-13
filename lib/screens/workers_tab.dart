@@ -9,6 +9,7 @@ import '../Provider/attendance_provider.dart';
 
 import '../foundation/color.dart';
 import '../widgets/call_to_action_button.dart';
+import 'department_List.dart';
 
 class WorkersTab extends StatefulWidget {
   const WorkersTab({super.key});
@@ -110,7 +111,7 @@ class _WorkersTabState extends State<WorkersTab> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => AttendanceDatesScreen(),
+                  builder: (context) => DepartmentList(),
                 ),
               );
             }),

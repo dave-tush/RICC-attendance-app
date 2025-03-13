@@ -139,7 +139,7 @@ void showAddMemberForm(BuildContext context) {
                   'First Timer',
                   style: TextStyle(color: colors.primaryColor),
                 ),
-                value: provider.selectedGender,
+                value: provider.firstTimer,
                 items: ['Yes', 'No']
                     .map(
                       (firstTimer) => DropdownMenuItem(
@@ -170,8 +170,8 @@ void showAddMemberForm(BuildContext context) {
               gender: provider.selectedGender!,
               phoneNumber: countryCode + phoneNumberController.text,
               dateOfBirth: doBController.text,
-              firstTimer: firstTimerController.text,
-              type: 'members', address: '', whatsAppPhoneNumber: ''
+              firstTimer: provider.firstTimer!,
+              type: 'members', address: addressController.text, whatsAppPhoneNumber: ''
           );
           Provider.of<AttendanceProvider>(context, listen: false)
               .addMember(context, member, phoneNumberController.text);

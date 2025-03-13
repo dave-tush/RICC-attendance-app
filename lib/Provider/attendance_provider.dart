@@ -168,6 +168,12 @@ class AttendanceProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  List<DocumentSnapshot> getWorkersByDepartment(String department) {
+    return _work.where((worker) {
+      final data = worker.data() as Map<String, dynamic>;
+      return data['churchDepartment'] == department;
+    }).toList();
+  }
   Future<void> _saveCollectionAttendance(
       DocumentReference attendanceDocRef,
       String collectionName,
