@@ -112,6 +112,7 @@ class AttendanceProvider with ChangeNotifier {
     try {
       User? user = FirebaseAuth.instance.currentUser;
       if (user == null) {
+
         print('User not logged in');
         return;
       }
