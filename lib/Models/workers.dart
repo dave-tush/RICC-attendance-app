@@ -4,13 +4,13 @@ class Worker {
   final String id;
   final String name;
   final String phoneNumber;
+  final String whatsAppNumber;
   final String level;
   final String gender;
   final String churchDepartment;
   final String address;
   final String dateOfBirth;
   final int attendanceCount;
-  final String email;
   final String type;
   bool isPresent;
   final Timestamp timestamp;
@@ -23,7 +23,7 @@ class Worker {
       required this.phoneNumber,
       required this.level,
       required this.churchDepartment,
-        required this.email,
+        required this.whatsAppNumber,
       required this.gender,
       required this.address,
         required this.dateOfBirth,
@@ -44,8 +44,7 @@ class Worker {
       address: data['address']?? "N/A",
       dateOfBirth: data['dateOfBirth']?? "N/A",
         attendanceCount: data['attendanceCount'] ?? 0,
-      email: data['email'] ?? "N/A",
-      type: data['type']
+      type: data['type'], whatsAppNumber: data['whatsAppNumber'] ?? "N/A"
     );
   }
 
@@ -54,6 +53,7 @@ class Worker {
       'name': name,
       'churchDepartment': churchDepartment,
       'phoneNumber': phoneNumber,
+      'whatsAppNumber' : whatsAppNumber,
       'level': level,
       'gender': gender,
       'address': address,
@@ -61,7 +61,7 @@ class Worker {
       'timeStamp': timestamp,
       'dateOfBirth': dateOfBirth,
       'attendanceCount': attendanceCount,
-      'email': email,
+
       'type': type
     };
   }

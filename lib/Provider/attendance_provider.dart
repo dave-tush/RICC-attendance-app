@@ -76,10 +76,12 @@ class AttendanceProvider with ChangeNotifier {
     _department = department;
     notifyListeners();
   }
-  void setSelectedDepartment (String? department){
+
+  void setSelectedDepartment(String? department) {
     _department = department;
     notifyListeners();
   }
+
   List<DocumentSnapshot> get firstTimers {
     return _allUser.where((user) {
       final data = user.data() as Map<String, dynamic>;
@@ -96,6 +98,7 @@ class AttendanceProvider with ChangeNotifier {
     }
     return departments.toList();
   }
+
   List<DocumentSnapshot> get filteredByDepartment {
     if (_department == null || _department!.isEmpty) {
       return _allUser;
@@ -106,13 +109,71 @@ class AttendanceProvider with ChangeNotifier {
       return department == _department;
     }).toList();
   }
+
+  Future<void> updateWorkerInFirestore(
+      String documentId, Worker updatedWorker) async {
+    try {
+      User? user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
+      String uid = user.uid;
+
+      await _db
+          .collection('users')
+          .doc(uid)
+          .collection('workers')
+          .doc(documentId)
+          .update(updatedWorker.toFirestore());
+
+      await _db
+          .collection('users')
+          .doc(uid)
+          .collection('all')
+          .doc(documentId)
+          .update(updatedWorker.toFirestore());
+
+      fetchData();
+      notifyListeners();
+    } catch (e) {
+      print('Error updating worker: $e');
+      throw e;
+    }
+  }
+
+  Future<void> updateMemberInFirestore(
+      String documentId, Members updatedMember) async {
+    try {
+      User? user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
+      String uid = user.uid;
+
+      await _db
+          .collection('users')
+          .doc(uid)
+          .collection('members')
+          .doc(documentId)
+          .update(updatedMember.toFirestore());
+
+      await _db
+          .collection('users')
+          .doc(uid)
+          .collection('all')
+          .doc(documentId)
+          .update(updatedMember.toFirestore());
+
+      fetchData();
+      notifyListeners();
+    } catch (e) {
+      print('Error updating member: $e');
+      throw e;
+    }
+  }
+
   Future<void> fetchData() async {
     _isLoading = true;
     //fetch workers
     try {
       User? user = FirebaseAuth.instance.currentUser;
       if (user == null) {
-
         print('User not logged in');
         return;
       }
@@ -140,6 +201,7 @@ class AttendanceProvider with ChangeNotifier {
       notifyListeners();
     }
   }
+
   // Add this method to handle saving all attendance
   Future<void> saveAllAttendance(String topic) async {
     User? user = FirebaseAuth.instance.currentUser;
@@ -147,11 +209,8 @@ class AttendanceProvider with ChangeNotifier {
     String uid = user.uid;
     final date = DateTime.now().toIso8601String().split('T').first;
 
-    final attendanceDocRef = _db
-        .collection('users')
-        .doc(uid)
-        .collection('attendance')
-        .doc(date);
+    final attendanceDocRef =
+        _db.collection('users').doc(uid).collection('attendance').doc(date);
 
     // Save topic/text field
     await attendanceDocRef.set({
@@ -175,11 +234,9 @@ class AttendanceProvider with ChangeNotifier {
       return data['churchDepartment'] == department;
     }).toList();
   }
-  Future<void> _saveCollectionAttendance(
-      DocumentReference attendanceDocRef,
-      String collectionName,
-      List<DocumentSnapshot> users
-      ) async {
+
+  Future<void> _saveCollectionAttendance(DocumentReference attendanceDocRef,
+      String collectionName, List<DocumentSnapshot> users) async {
     final collectionRef = attendanceDocRef.collection(collectionName);
 
     for (final user in users) {
@@ -195,6 +252,7 @@ class AttendanceProvider with ChangeNotifier {
       }
     }
   }
+
   Future<void> saveWorker(String additionalText) async {
     User? user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
@@ -236,10 +294,10 @@ class AttendanceProvider with ChangeNotifier {
             workerRef,
             {
               'name': data['name'],
-              'schoolDepartment': data['schoolDepartment'],
+              'address': data['address'],
               'churchDepartment': data['churchDepartment'],
               'level': data['level'],
-              'position': data['position'],
+              'whatsAppNumber': data['whatsAppNumber'],
               'phoneNumber': data['phoneNumber'],
               'isPresent': data['isPresent'],
               'attendanceCount': attendanceCount + 1,
@@ -295,6 +353,7 @@ class AttendanceProvider with ChangeNotifier {
       return {};
     }
   }
+
   Future<void> saveMember(String additionalText) async {
     User? user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
@@ -302,7 +361,7 @@ class AttendanceProvider with ChangeNotifier {
     final date = DateTime.now().toIso8601String().split('T').first;
 
     final attendanceDocRef =
-    _db.collection('users').doc(uid).collection('attendance').doc(date);
+        _db.collection('users').doc(uid).collection('attendance').doc(date);
 
     final attendanceCollection = attendanceDocRef.collection('members');
 
@@ -329,9 +388,9 @@ class AttendanceProvider with ChangeNotifier {
         await _db.runTransaction((transaction) async {
           DocumentSnapshot memberDoc = await memberRef.get();
           int attendanceCount =
-          memberDoc.exists && memberDoc['attendanceCount'] != null
-              ? memberDoc['attendanceCount'] as int
-              : 0;
+              memberDoc.exists && memberDoc['attendanceCount'] != null
+                  ? memberDoc['attendanceCount'] as int
+                  : 0;
           await transaction.set(
             memberRef,
             {
@@ -358,6 +417,7 @@ class AttendanceProvider with ChangeNotifier {
     _member = updatedMember;
     fetchData();
   }
+
   Future<void> saveMembers() async {
     User? user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
@@ -709,7 +769,6 @@ class AttendanceProvider with ChangeNotifier {
           .collection(collection)
           .doc(documentId)
           .update({'isPresent': isPresent});
-
 
       final docRef =
           _db.collection('users').doc(uid).collection('all').doc(documentId);

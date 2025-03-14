@@ -1,4 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:first_project/constants/departments.dart';
+import 'package:first_project/constants/level.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
@@ -13,6 +15,7 @@ void showAddWorkerForm(BuildContext context) {
   final nameController = TextEditingController();
   final dateOfBirthController = TextEditingController();
   final addressController = TextEditingController();
+  final whatsAppNumberController = TextEditingController();
   final phoneNumberController = TextEditingController();
   final myFocusNode = FocusNode();
   final yFocusNode = FocusNode();
@@ -70,6 +73,22 @@ void showAddWorkerForm(BuildContext context) {
                         fontSize: 16,
                       )),
                 ),
+                TextFormField(
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    LengthLimitingTextInputFormatter(11),
+                  ],
+                  controller: whatsAppNumberController,
+                  decoration: InputDecoration(
+                    labelText: 'WhatsApp Number',
+                    prefixText: countryCode,
+                    labelStyle: TextStyle(
+                      color: colors.primaryColor,
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
                 DropdownButtonFormField(
                     hint: Text(
                       'Church Department',
@@ -77,22 +96,7 @@ void showAddWorkerForm(BuildContext context) {
                     ),
                     value: provider.selectedLevel,
                     style: TextStyle(color: colors.mainColor),
-                    items: [
-                      'MINSTREL',
-                      'SOUND',
-                      'MEDIA',
-                      'LIGHT',
-                      'MAINTENANCE',
-                      'SANCTUARY',
-                      'HOSPITALITY',
-                      'COMMUNICATION',
-                      'PROTOCOL',
-                      'USHERING',
-                      'EVANGELISM',
-                      'WATCHMEN',
-                      'FOLLOW_UP',
-                      'FINANCE',
-                    ]
+                    items: churchDepartment
                         .map(
                           (churchDepartment) => DropdownMenuItem(
                             value: '$churchDepartment DEPARTMENT',
@@ -113,15 +117,7 @@ void showAddWorkerForm(BuildContext context) {
                     hint: Text('Level',
                         style: TextStyle(color: colors.primaryColor)),
                     value: provider.selectedLevel,
-                    items: [
-                      'Pre Degree',
-                      '100 Level',
-                      '200 Level',
-                      '300 Level',
-                      '400 Level',
-                      '500 Level',
-                      'Graduate',
-                    ]
+                    items: level
                         .map(
                           (level) => DropdownMenuItem(
                             value: level,
@@ -191,9 +187,9 @@ void showAddWorkerForm(BuildContext context) {
                   gender: provider.selectedGender!,
                   address: addressController.text,
                   dateOfBirth: dateOfBirthController.text,
-                  attendanceCount: 0, email: '',
-                  type: 'workers'
-              );
+                  attendanceCount: 0,
+                  whatsAppNumber: countryCode + whatsAppNumberController.text,
+                  type: 'workers');
               Provider.of<AttendanceProvider>(context, listen: false)
                   .addWorker(context, worker, phoneNumberController.text);
               Navigator.of(context).pop();

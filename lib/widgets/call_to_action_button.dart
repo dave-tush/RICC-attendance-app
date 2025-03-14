@@ -9,9 +9,7 @@ InkWell button(
     ) {
   final color = MyColor();
   return InkWell(
-    onTap: () {
-      onPressed();
-    },
+    onTap: onPressed,
     child: Container(
       decoration: BoxDecoration(
         color: color.mainColor,

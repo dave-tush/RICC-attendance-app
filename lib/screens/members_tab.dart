@@ -5,11 +5,13 @@ import 'package:first_project/screens/members_details_screens.dart';
 import 'package:first_project/screens/workers_details_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../Models/workers.dart';
 import '../Provider/attendance_provider.dart';
 import '../Models/members.dart';
 import '../widgets/call_to_action_button.dart';
 import '../widgets/high_light_text.dart';
 import 'attendance_date_screen.dart';
+import 'members_details_screen.dart';
 
 class MembersTab extends StatelessWidget {
   const MembersTab({super.key});
@@ -39,31 +41,32 @@ class MembersTab extends StatelessWidget {
           children: [
             button(context, "Save members Attendance", () async {
               final textDateController = TextEditingController();
-              String? additionalText = await showDialog<String>(context: context, builder:
-                  (BuildContext context) {
-                return AlertDialog(title: Text("today's service topic"),
-                  content: TextField(
-                    controller: textDateController,
-                    decoration: InputDecoration(hintText: "Enter topic"),
-                  ),
-                  actions: [
-                    TextButton(
-                      child: Text('Cancel'),
-                      onPressed: () {
-                        Navigator.of(context).pop();
-                      },
-                    ),
-                    TextButton(
-                      child: Text('Save'),
-                      onPressed: () {
-                        Navigator.of(context).pop(textDateController.text);
-                      },
-                    ),
-                  ],
-                );
-              }
-              );
-              if (additionalText != null && additionalText.isNotEmpty){
+              String? additionalText = await showDialog<String>(
+                  context: context,
+                  builder: (BuildContext context) {
+                    return AlertDialog(
+                      title: Text("today's service topic"),
+                      content: TextField(
+                        controller: textDateController,
+                        decoration: InputDecoration(hintText: "Enter topic"),
+                      ),
+                      actions: [
+                        TextButton(
+                          child: Text('Cancel'),
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                          },
+                        ),
+                        TextButton(
+                          child: Text('Save'),
+                          onPressed: () {
+                            Navigator.of(context).pop(textDateController.text);
+                          },
+                        ),
+                      ],
+                    );
+                  });
+              if (additionalText != null && additionalText.isNotEmpty) {
                 await provider.saveMember(additionalText);
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
@@ -140,8 +143,15 @@ class MembersAttendance extends StatelessWidget {
           DocumentSnapshot document = filteredMembers[index];
           String documentId = document.id;
           Map<String, dynamic> data = document.data() as Map<String, dynamic>;
-          String noteText = data['name'];
+          String name = data['name']  ?? "null";
           bool isPresent = data['isPresent'] ?? false;
+          String level = data['level']  ?? "null";
+          String gender = data['gender']  ?? "null";
+          String whatsAppPhoneNumber = data['whatsAppPhoneNumber']  ?? "null";
+          String address = data['address']  ?? "null";
+          String dateOfBirth = data['dateOfBirth']  ?? "null";
+          String phoneNumber = data['phoneNumber']  ?? "null";
+          String firstTimer = data['firstTimer']  ?? "null";
           String department = data['department'] ?? "null";
           return ListTile(
             leading: Checkbox(
@@ -152,7 +162,7 @@ class MembersAttendance extends StatelessWidget {
                 }),
             title: RichText(
               text: highlightText(
-                noteText,
+                name,
                 query,
                 TextStyle(
                     color: color.primaryColor,
@@ -173,7 +183,23 @@ class MembersAttendance extends StatelessWidget {
                 fontSize: 12,
               ),
             ),
-            onTap: () {},
+            onTap: () {
+              Navigator.push(context, MaterialPageRoute(builder: (context) {
+              return  MembersDetailScreen(
+                  members: Members(
+                      name: name,
+                      level: level,
+                      gender: gender,
+                      phoneNumber: phoneNumber,
+                      dateOfBirth: dateOfBirth,
+                      firstTimer: firstTimer,
+                      address: address,
+                      whatsAppPhoneNumber: whatsAppPhoneNumber,
+                      type: 'members'),
+                  documentId: documentId,
+                );
+              }));
+            },
           );
         },
       ),
